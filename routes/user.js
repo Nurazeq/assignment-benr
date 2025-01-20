@@ -4,10 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-<<<<<<< HEAD
-const userController = require('../controllers/userController');
-const rateLimit = require("express-rate-limit");
 const logAction = require('../utils/logger'); // Import the utility
+const rateLimit = require("express-rate-limit");
 
 // Define rate limiting for login with enhanced message
 const loginLimiter = rateLimit({
@@ -19,88 +17,6 @@ const loginLimiter = rateLimit({
     res.status(429).send(`Too Many Attempts. Please try again after some time.`);  // Custom message for rate limit exceeded
   }
 });
-
-// View Profile (Public)
-router.get('/profile/:username', async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.params.username.toLowerCase() }).select('-password').populate('friends', 'username');
-    if (!user) {
-      logAction('Profile view failed - user not found', req.params.username);
-      return res.status(404).send('User not found');
-    }
-
-    // Calculate total score and total questions right
-    const totalScore = user.scores.reduce((acc, scoreEntry) => acc + scoreEntry.score, 0);
-    const totalQuestionsRight = user.scores.reduce((acc, scoreEntry) => acc + scoreEntry.questions_right, 0);
-
-    const userProfile = {
-      ...user.toObject(),
-      totalScore,
-      totalQuestionsRight,
-      friendsCount: user.friends.length,
-      friends: user.friends.map(friend => friend.username)
-    };
-
-    logAction('Viewed profile', req.params.username);
-    res.json(userProfile);
-  } catch (error) {
-    logAction('Profile view failed - server error', req.params.username);
-    res.status(500).send('Server error');
-  }
-});
-
-router.post('/register', async (req, res) => {
-  const { name, username, email, password, age } = req.body;
-
-  // Updated password validation with special character
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
-  if (!passwordRegex.test(password)) {
-    return res.status(400).send('Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*?/.).');
-  }
-
-  try {
-    // Check if email already exists
-    const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
-    if (existingUserEmail) {
-      return res.status(400).send('Email already in use');
-    }
-
-    // Check if username already exists
-    const existingUserUsername = await User.findOne({ username: username.toLowerCase() });
-    if (existingUserUsername) {
-      return res.status(400).send('Username already in use');
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create new user
-    const newUser = new User({
-      name,
-      username: username.toLowerCase(),
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      age
-    });
-
-    await newUser.save();
-    res.status(201).send('User registered successfully. You can now log in.');
-  } catch (error) {
-    console.error(error); // Log the error to the console
-    res.status(500).send('Server error');
-  }
-});
-
-// Login with loginLimiter middleware
-router.post('/login', loginLimiter, async (req, res) => {
-=======
-
-// Logger middleware
-const logAction = (action, user) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${action} - User: ${user}`);
-};
 
 // Register
 router.post('/register', async (req, res) => {
@@ -127,65 +43,36 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
->>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
+// Login with loginLimiter middleware
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       logAction('Login failed - invalid email', email);
-<<<<<<< HEAD
-      return res.status(400).send('Invalid Credentials. Please check your email or password.');
-=======
       return res.status(400).send('Invalid credentials');
->>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       logAction('Login failed - invalid password', email);
-<<<<<<< HEAD
-      return res.status(400).send('Invalid Credentials. Please check your email or password.');
-=======
       return res.status(400).send('Invalid credentials');
->>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
     }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     logAction('Logged in', email);
     res.json({ token });
   } catch (error) {
     logAction('Login failed - server error', email);
-<<<<<<< HEAD
-    res.status(500).send('Server Error. Please try again later.');
-  }
-});
-
-// Forget Password with error handling
-=======
     res.status(500).send('Server error');
   }
 });
 
 // Forget Password
->>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
 router.post('/forgot-password', async (req, res) => {
   const { email, newPassword } = req.body;
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       logAction('Password reset failed - user not found', email);
-<<<<<<< HEAD
-      return res.status(400).send('User Not Found. Please check the email address.');
-    }
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
-    logAction('Password reset', email);
-    res.send('Password Updated Successfully.');
-  } catch (error) {
-    logAction('Password reset failed - server error', email);
-    res.status(500).send('Server Error. Please try again later.');
-=======
       return res.status(400).send('User not found');
     }
     user.password = await bcrypt.hash(newPassword, 10);
@@ -195,7 +82,6 @@ router.post('/forgot-password', async (req, res) => {
   } catch (error) {
     logAction('Password reset failed - server error', email);
     res.status(500).send('Server error');
->>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
   }
 });
 
@@ -277,31 +163,6 @@ router.post('/remove-friend', auth, async (req, res) => {
     res.status(500).send('Server error');
   }
 });
-
-// View Friends' Scores (Public)
-// router.get('/friends-scores/:username', async (req, res) => {
-//   try {
-//     const user = await User.findOne({ username: req.params.username.toLowerCase() }).populate('friends', 'username scores');
-//     if (!user) {
-//       logAction('View friends scores failed - user not found', req.params.username);
-//       return res.status(404).send('User not found');
-//     }
-
-//     const friendsScores = user.friends.map(friend => ({
-//       username: friend.username,
-//       scores: friend.scores.map(score => ({
-//         category: score.category,
-//         score: score.score,
-//         questions_right: score.questions_right
-//       }))
-//     }));
-
-//     res.json(friendsScores);
-//   } catch (error) {
-//     logAction('View friends scores failed - server error', req.params.username);
-//     res.status(500).send('Server error');
-//   }
-// });
 
 // Logout (No token required)
 router.post('/logout', (req, res) => {
