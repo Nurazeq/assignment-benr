@@ -3,6 +3,8 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 import path from 'path';
 
+const __dirname = path.dirname(new URL(import.meta.url).pathname);  // Add this line
+
 const app = express();
 const SECRET_KEY = '6LeiXr0qAAAAAFz8UjMt2cwY-C7hW1O_1TYb7EpG'; // Replace with your actual secret key
 
