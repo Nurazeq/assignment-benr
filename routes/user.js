@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+<<<<<<< HEAD
 const userController = require('../controllers/userController');
 const rateLimit = require("express-rate-limit");
 const logAction = require('../utils/logger'); // Import the utility
@@ -93,34 +94,87 @@ router.post('/register', async (req, res) => {
 
 // Login with loginLimiter middleware
 router.post('/login', loginLimiter, async (req, res) => {
+=======
+
+// Logger middleware
+const logAction = (action, user) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${action} - User: ${user}`);
+};
+
+// Register
+router.post('/register', async (req, res) => {
+  const { name, username, email, password, age } = req.body;
+  try {
+    // Convert email and username to lowercase
+    const normalizedEmail = email.toLowerCase();
+    const normalizedUsername = username.toLowerCase();
+
+    // Check if the email or username already exists
+    const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { username: normalizedUsername }] });
+    if (existingUser) {
+      logAction('Registration failed - email or username already exists', email);
+      return res.status(400).send('Email or username already in use');
+    }
+
+    const user = new User({ name, username: normalizedUsername, email: normalizedEmail, password, age });
+    await user.save();
+    logAction('Registered', normalizedUsername);
+    res.status(201).send('User registered');
+  } catch (error) {
+    logAction('Registration failed', email);
+    res.status(400).send(error);
+  }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+>>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       logAction('Login failed - invalid email', email);
+<<<<<<< HEAD
       return res.status(400).send('Invalid Credentials. Please check your email or password.');
+=======
+      return res.status(400).send('Invalid credentials');
+>>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       logAction('Login failed - invalid password', email);
+<<<<<<< HEAD
       return res.status(400).send('Invalid Credentials. Please check your email or password.');
+=======
+      return res.status(400).send('Invalid credentials');
+>>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
     }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     logAction('Logged in', email);
     res.json({ token });
   } catch (error) {
     logAction('Login failed - server error', email);
+<<<<<<< HEAD
     res.status(500).send('Server Error. Please try again later.');
   }
 });
 
 // Forget Password with error handling
+=======
+    res.status(500).send('Server error');
+  }
+});
+
+// Forget Password
+>>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
 router.post('/forgot-password', async (req, res) => {
   const { email, newPassword } = req.body;
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       logAction('Password reset failed - user not found', email);
+<<<<<<< HEAD
       return res.status(400).send('User Not Found. Please check the email address.');
     }
     const salt = await bcrypt.genSalt(10);
@@ -131,6 +185,17 @@ router.post('/forgot-password', async (req, res) => {
   } catch (error) {
     logAction('Password reset failed - server error', email);
     res.status(500).send('Server Error. Please try again later.');
+=======
+      return res.status(400).send('User not found');
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    logAction('Password reset', email);
+    res.send('Password updated');
+  } catch (error) {
+    logAction('Password reset failed - server error', email);
+    res.status(500).send('Server error');
+>>>>>>> bf6040df8c53b4e963dabe0240a4df2b3e7917be
   }
 });
 
