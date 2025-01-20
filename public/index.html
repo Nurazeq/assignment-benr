@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrainBlitz</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        .g-recaptcha {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BrainBlitz</h1>
+        <div class="g-recaptcha" data-sitekey="6LeiXr0qAAAAADAsf7yh4cuoDf5v_ew_L1290lu2"></div>
+        <br>
+        <button type="button" onclick="submitForm()">Submit</button>
+    </div>
+
+    <script>
+        function submitForm() {
+            var captchaResponse = grecaptcha.getResponse();
+            if (captchaResponse.length === 0) {
+                alert("Please complete the CAPTCHA");
+            } else {
+                // Send the CAPTCHA response to your server for verification
+                fetch('/verify-captcha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ captchaResponse })
+                })
+                .then(response => response.json())
+                .then(data => alert('Success: ' + data.message))
+                .catch(error => alert('Error: ' + error));
+            }
+        }
+    </script>
+</body>
+</html>
