@@ -18,32 +18,40 @@ const loginLimiter = rateLimit({
   }
 });
 
-// Register
 router.post('/register', async (req, res) => {
   const { name, username, email, password, age } = req.body;
+
   try {
-    // Convert email and username to lowercase
     const normalizedEmail = email.toLowerCase();
     const normalizedUsername = username.toLowerCase();
 
     // Check if the email or username already exists
-    const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { username: normalizedUsername }] });
+    const existingUser = await User.findOne({
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }]
+    });
     if (existingUser) {
       logAction('Registration failed - email or username already exists', email);
       return res.status(400).send('Email or username already in use');
     }
 
-    const user = new User({ name, username: normalizedUsername, email: normalizedEmail, password, age });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      username: normalizedUsername,
+      email: normalizedEmail,
+      password: hashedPassword,
+      age,
+    });
     await user.save();
     logAction('Registered', normalizedUsername);
-    res.status(201).send('User registered');
+    res.status(201).send('User registered successfully');
   } catch (error) {
-    logAction('Registration failed', email);
-    res.status(400).send(error);
+    logAction('Registration failed - server error', email || 'unknown');
+    res.status(500).send('Server error');
   }
 });
 
-// Login with loginLimiter middleware
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -52,11 +60,17 @@ router.post('/login', loginLimiter, async (req, res) => {
       logAction('Login failed - invalid email', email);
       return res.status(400).send('Invalid credentials');
     }
+
+    console.log('Stored hashed password:', user.password); // Debugging log
+
+    // Compare the entered password with the hashed password stored in the database
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       logAction('Login failed - invalid password', email);
       return res.status(400).send('Invalid credentials');
     }
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     logAction('Logged in', email);
     res.json({ token });
