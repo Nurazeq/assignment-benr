@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const logAction = require('../utils/logger'); // Import the utility
-const rateLimit = require("express-rate-limit");
+const rateLimit = require("express-rate-limit");  
 
 // Define rate limiting for login with enhanced message
 const loginLimiter = rateLimit({
@@ -18,42 +18,53 @@ const loginLimiter = rateLimit({
   }
 });
 
+// Register User
 router.post('/register', async (req, res) => {
   const { name, username, email, password, age } = req.body;
-
   try {
-    const normalizedEmail = email.toLowerCase();
-    const normalizedUsername = username.toLowerCase();
-
-    // Check if the email or username already exists
-    const existingUser = await User.findOne({
-      $or: [{ email: normalizedEmail }, { username: normalizedUsername }]
-    });
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      logAction('Registration failed - email or username already exists', email);
-      return res.status(400).send('Email or username already in use');
+      logAction('Registration failed - email already exists', email);
+      return res.status(400).send('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check if username already exists
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      logAction('Registration failed - username already exists', username);
+      return res.status(400).send('Username already taken');
+    }
 
-    const user = new User({
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create a new user
+    const newUser = new User({
       name,
-      username: normalizedUsername,
-      email: normalizedEmail,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
       password: hashedPassword,
-      age,
+      age
     });
-    await user.save();
-    logAction('Registered', normalizedUsername);
+
+    // Save the user to the database
+    await newUser.save();
+    logAction('User registered', email);
+
+    // Send success response
     res.status(201).send('User registered successfully');
   } catch (error) {
-    logAction('Registration failed - server error', email || 'unknown');
+    logAction('Registration failed - server error', email);
     res.status(500).send('Server error');
   }
 });
 
+// Login route with rate limiter
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
@@ -61,11 +72,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).send('Invalid credentials');
     }
 
-    console.log('Stored hashed password:', user.password); // Debugging log
-
-    // Compare the entered password with the hashed password stored in the database
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       logAction('Login failed - invalid password', email);
       return res.status(400).send('Invalid credentials');

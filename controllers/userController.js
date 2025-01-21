@@ -27,13 +27,8 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'CAPTCHA verification failed' });
         }
 
-        // Step 2: Validate password strength
-        const strengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!strengthRegex.test(password)) {
-            return res.status(400).json({
-                message: 'Password must have 8+ characters, 1 uppercase, 1 lowercase, 1 number, and 1 symbol.'
-            });
-        }
+        // Step 2: Skip the password strength validation (no longer required)
+        // No password validation regex applied here
 
         // Step 3: Save user data locally for debugging purposes
         const userData = { username, email, password, timestamp: new Date().toISOString() };
@@ -55,7 +50,7 @@ export const registerUser = async (req, res) => {
 };
 
 // Login user with account locking after 3 failed attempts
-export const login = async (req, res) => {
+exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
