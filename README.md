@@ -1,1 +1,1 @@
-# benr
+We are student of Computer Engineering. This project is our first project together in Database Engineering and Technology Development. This project is about a quiz game. The interface for this game is pulled seperately and does not included to our github.
